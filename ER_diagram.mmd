@@ -1,0 +1,28 @@
+erDiagram
+    USER ||--o{ RESOURCE : owns
+    USER ||--o{ UPLOAD : uploads
+    RESOURCE }|..|{ UPLOAD : references
+
+    USER {
+      ObjectId id PK
+      string name
+      string email
+      object preferences
+    }
+    RESOURCE {
+      ObjectId id PK
+      ObjectId owner FK
+      string type
+      string title
+      object meta
+      string smythosId
+      string storageUrl
+    }
+    UPLOAD {
+      ObjectId id PK
+      ObjectId owner FK
+      string filename
+      string originalName
+      number size
+      string mimeType
+    }
