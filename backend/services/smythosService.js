@@ -30,7 +30,7 @@ const AGENT_ENDPOINTS = {
 
 /**
  * Call SmythOS Agent Endpoint
- * @param {string} endpoint - The endpoint name (e.g., '/create_storybook')
+ * @param {string} endpoint - The endpoint name (e.g., 'create_storybook')
  * @param {object} payload - The data to send to the agent
  * @returns {Promise<object>} - The agent response
  */
@@ -44,12 +44,19 @@ async function callSmythosAgent(endpoint, payload) {
       throw new Error(`Unknown agent endpoint: ${cleanEndpoint}`);
     }
 
-    console.log(`Calling SmythOS agent endpoint: ${cleanEndpoint}`, { payload });
+    console.log(`Calling SmythOS agent endpoint: ${cleanEndpoint}`, { 
+      payload: JSON.stringify(payload, null, 2),
+      url: `${SMYTHOS_BASE_URL}/agents/${SMYTHOS_AGENT_ID}/endpoints/${cleanEndpoint}`,
+      apiKey: SMYTHOS_API_KEY ? `${SMYTHOS_API_KEY.substring(0, 10)}...` : 'NOT_SET'
+    });
 
-    // Call the SmythOS agent
-    const response = await smythosClient.post(`/agents/${SMYTHOS_AGENT_ID}/run/${cleanEndpoint}`, payload);
+    // Call the SmythOS agent using the correct endpoint format
+    const response = await smythosClient.post(`/agents/${SMYTHOS_AGENT_ID}/endpoints/${cleanEndpoint}`, payload);
     
-    console.log(`SmythOS response for ${cleanEndpoint}:`, response.data);
+    console.log(`SmythOS response for ${cleanEndpoint}:`, {
+      status: response.status,
+      data: response.data
+    });
     
     return {
       success: true,
@@ -62,7 +69,10 @@ async function callSmythosAgent(endpoint, payload) {
     console.error(`SmythOS agent call failed for ${endpoint}:`, {
       message: error.message,
       status: error.response?.status,
+      statusText: error.response?.statusText,
       data: error.response?.data,
+      url: error.config?.url,
+      headers: error.config?.headers,
       payload
     });
 
@@ -399,20 +409,23 @@ This image demonstrates inclusive learning principles, showing how different lea
 async function callSkill(endpoint, payload) {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
   
-  // If SmythOS is not properly configured (placeholder API key), use mock responses
+  // Check if SmythOS is properly configured
   if (!SMYTHOS_API_KEY || SMYTHOS_API_KEY === 'your_actual_smythos_api_key_here') {
-    console.log(`Using mock response for ${endpoint} (SmythOS not configured)`);
+    console.log(`⚠️  Using mock response for ${endpoint} - SmythOS API key not configured`);
+    console.log(`To use real SmythOS agent, set SMYTHOS_API_KEY in your .env file`);
     return getMockResponse(cleanEndpoint, payload);
   }
 
   // Try to call the real SmythOS agent
+  console.log(`🚀 Attempting to call SmythOS agent for ${endpoint}`);
   const result = await callSmythosAgent(endpoint, payload);
   
   if (result.success) {
+    console.log(`✅ SmythOS agent call successful for ${endpoint}`);
     return result.data;
   } else {
     // If the agent call fails, log the error and return a mock response for development
-    console.warn(`SmythOS agent call failed, using mock response:`, result.error);
+    console.warn(`❌ SmythOS agent call failed for ${endpoint}, using mock response:`, result.error);
     return getMockResponse(cleanEndpoint, payload);
   }
 }
